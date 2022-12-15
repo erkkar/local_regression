@@ -33,3 +33,12 @@ Get mean of R2 scores
 ```python
 models.score.mean()
 ```
+
+Calculate predictions with a condition on score
+
+```python
+predicted = models.predict(
+    data[["NetRad"]], 
+    model_condition=models.score >= 0.5
+)
+```
