@@ -1,0 +1,21 @@
+[project]
+name = "local_regression"
+version = "1.0.0"
+authors = [
+  {name = "Erkka Rinne", email = "erkka.rinne@fmi.fi"},
+]
+description = "Python module for creating localized linear regression models"
+requires-python = ">=3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "sklearn",
+    "pandas",
+]
+
+[tool.setuptools]
+py-modules = ["local_regression"]
