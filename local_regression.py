@@ -58,48 +58,47 @@ class LocalRegression(object):
 
     def __init__(
         self,
-        exog: pd.DataFrame,
-        endog: pd.Series,
-        sample_weight: pd.Series = None,
+        data: pd.DataFrame,
+        exog: list[str],
+        endog: str,
+        sample_weight: str = None,
         dates: list[pd.Timestamp] = None,
         min_samples: int = MIN_DATA_POINTS,
         min_score: float = None,
         max_window_width: str | pd.Timedelta = None,
-        stratifier: pd.Series = None,
+        stratifier: str = None,
         n_proc=1,
     ):
         """Initilize local regression
 
         Args:
-            exog (pd.DataFrame): Exogenous data
-            endog (pd.Series): endogenous data
-            sample_weight (pd.Series, optional): Sample weights, defaults to None.
+            data (pd.DataFrame): Modelling data
+            exog (list): List of names to use as exgogenous variables
+            endog (str): Name of endogenous variable
+            sample_weight (str, optional): Name of sample weight vector
             dates (list[pd.Timestamp], optional): List of dates to fit the models.
             min_samples (int, optional): Minimum samples to include,
                 defaults to MIN_DATA_POINTS.
             min_score (float, optional): Minimum score, defaults to None.
             max_window_width (str | pd.Timedelta, optional): Maximum width of data
                 window, defaults to None.
-            stratifier (pd.Series, optional): Use this variable to for splitting
+            stratifier (str, optional): Use this variable to for splitting
                 to train and test sets in a stratified fashien, defaults to None.
             n_proc (int, optional): Number of (sub)processes, defaults to 1.
         """
-        # Exogenous and endogenous variables
-        self.exog = exog
-        self.endog = endog
-        if not self.endog.name:
-            self.endog.name = "endogenous"
 
         # Set of observations
-        self.modeldata = pd.concat(
-            [self.exog, self.endog],
-            axis=1,
-        ).dropna(how="any")
-        self.modeldata["weight"] = sample_weight if sample_weight is not None else 1
+        self.modeldata = data.dropna(how="any").copy()
+        self.modeldata["weight"] = (
+            self.modeldata[sample_weight] if sample_weight is not None else 1
+        )
+
+        # Exogenous and endogenous variables
+        self.exog = self.modeldata[exog]
+        self.endog = self.modeldata[endog]
 
         if stratifier is not None:
-            self.stratifier = stratifier
-            self.modeldata = self.modeldata.join(stratifier, how="left").dropna()
+            self.stratifier = self.modeldata[stratifier]
         else:
             self.stratifier = None
 
