@@ -88,7 +88,7 @@ class LocalRegression(object):
         """
 
         # Set of observations
-        self.modeldata = data.dropna(how="any").copy()
+        self.modeldata = data.copy()
         self.modeldata["weight"] = (
             self.modeldata[sample_weight] if sample_weight is not None else 1
         )
@@ -132,7 +132,7 @@ class LocalRegression(object):
         *existing* time indices
         """
         # Check number of data points and widen the window if necessary
-        while len(self.modeldata.loc[start:stop]) < min_samples:
+        while len(self.modeldata.dropna().loc[start:stop]) < min_samples:
             start -= TIME_WINDOW_INCREASE
             stop += TIME_WINDOW_INCREASE
         return slice(*self.modeldata.loc[start:stop].index[[0, -1]])
@@ -199,7 +199,7 @@ class LocalRegression(object):
 
         while True:
             # Get data for this model
-            df = self.modeldata.loc[window]  # pylint: disable=invalid-name
+            df = self.modeldata.dropna().loc[window]  # pylint: disable=invalid-name
 
             # Get training and testing arrays
             (
