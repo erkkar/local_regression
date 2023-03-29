@@ -62,6 +62,7 @@ class LocalRegression(object):
         exog: list[str],
         endog: str,
         sample_weight: str = None,
+        test_size: float = TEST_SIZE,
         dates: list[pd.Timestamp] = None,
         min_samples: int = MIN_DATA_POINTS,
         min_score: float = None,
@@ -103,6 +104,7 @@ class LocalRegression(object):
             self.stratifier = None
 
         # Other attributes
+        self._test_size = test_size
         self._dates = dates if dates is not None else self._get_dates()
         self.model_windows = None
         self._models = None
@@ -213,7 +215,7 @@ class LocalRegression(object):
                 df[self.exog.columns],
                 df[self.endog.name],
                 df["weight"],
-                test_size=TEST_SIZE,
+                test_size=self._test_size,
                 random_state=0,
                 stratify=(self._stratify(df) if self.stratifier is not None else None),
             )
