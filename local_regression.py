@@ -233,14 +233,16 @@ class LocalRegression(object):
                 break
 
             # Widen the the window
-            window = self._get_window(
+            new_window = self._get_window(
                 window.start - TIME_WINDOW_INCREASE,
                 window.stop + TIME_WINDOW_INCREASE,
                 len(df) + SAMPLE_INCREASE,
             )
             # Stop if maximum window was reached
-            if not self._window_width_ok(window):
+            if not self._window_width_ok(new_window):
                 break
+            else:
+                window = new_window
 
         return _LocalModel(
             pipe,
