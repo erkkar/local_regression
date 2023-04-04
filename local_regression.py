@@ -111,6 +111,10 @@ class LocalRegression(object):
         self._test_size = test_size
         self._dates = dates if dates is not None else self._get_dates()
         self.model_windows = None
+        self._pipeline_spec = [
+            ("scaler", StandardScaler()),
+            ("linregress", LinearRegression()),
+        ]
         self._models = None
         self.score = None
         self._traindata = None
@@ -234,9 +238,7 @@ class LocalRegression(object):
             )
 
             # Fit the model
-            pipe = Pipeline(
-                [("scaler", StandardScaler()), ("linregress", LinearRegression())]
-            ).fit(
+            pipe = Pipeline(self._pipeline_spec).fit(
                 X_train,
                 y_train,
                 linregress__sample_weight=weight_train,
