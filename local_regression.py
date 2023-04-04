@@ -137,6 +137,7 @@ class LocalRegression(object):
         while len(self.modeldata.dropna().loc[start:stop]) < min_samples:
             start -= TIME_WINDOW_INCREASE
             stop += TIME_WINDOW_INCREASE
+        # Create a slice from first and last index
         return slice(*self.modeldata.loc[start:stop].index[[0, -1]])
 
     def _window_width_ok(self, window) -> bool:
