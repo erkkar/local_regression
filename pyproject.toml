@@ -1,6 +1,6 @@
 [project]
 name = "local_regression"
-version = "2.1.0"
+version = "3.0.0"
 authors = [
   {name = "Erkka Rinne", email = "erkka.rinne@fmi.fi"},
 ]
