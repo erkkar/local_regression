@@ -7,16 +7,20 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 
-MIN_DATA_POINTS = 20
+N_SAMPLES = 20
 SAMPLE_INCREASE = 10
 TIME_WINDOW_INCREASE = pd.Timedelta("24h")
 TEST_SIZE = 0.2
 N_STRATIFY_QUANTILES = 3
+MIN_SAMPLES = 2
 
 
 def _timeslice_length(window: slice) -> pd.Timedelta:
     """Calculate length of a timeslice"""
-    return window.stop - window.start
+    try:
+        return window.stop - window.start
+    except TypeError:
+        return None
 
 
 class _LocalModel(object):
@@ -51,7 +55,7 @@ class LocalRegression(object):
         modeldata (pd.DataFrame): All model data
         stratifier (pd.Series): Stratifier variable
         score (pd.Series): Coefficients of determination of the models
-        min_samples (int): Minimum number of samples to include.
+        n_samples (int): Number of samples to include.
         min_score (float): Minimum model score.
         max_window_width (pd.Timedelta): Maximum width of data window.
     """
@@ -64,7 +68,7 @@ class LocalRegression(object):
         sample_weight: str = None,
         test_size: float = TEST_SIZE,
         dates: list[pd.Timestamp] = None,
-        min_samples: int = MIN_DATA_POINTS,
+        n_samples: int = N_SAMPLES,
         min_score: float = None,
         max_window_width: str | pd.Timedelta = None,
         stratifier: str = None,
@@ -78,8 +82,8 @@ class LocalRegression(object):
             endog (str): Name of endogenous variable
             sample_weight (str, optional): Name of sample weight vector
             dates (list[pd.Timestamp], optional): List of dates to fit the models.
-            min_samples (int, optional): Minimum samples to include,
-                defaults to MIN_DATA_POINTS.
+            n_samples (int, optional): Number of samples to include,
+                defaults to N_SAMPLES.
             min_score (float, optional): Minimum score, defaults to None.
             max_window_width (str | pd.Timedelta, optional): Maximum width of data
                 window, defaults to None.
@@ -111,7 +115,7 @@ class LocalRegression(object):
         self.score = None
         self._traindata = None
         self._testdata = None
-        self.min_samples = min_samples
+        self.n_samples = n_samples
         self.min_score = min_score
         self.max_window_width = (
             pd.Timedelta(max_window_width) if max_window_width is not None else None
@@ -128,17 +132,27 @@ class LocalRegression(object):
         return dates
 
     def _get_window(
-        self, start: pd.Timestamp, stop: pd.Timestamp, min_samples: int
+        self, start: pd.Timestamp, stop: pd.Timestamp, n_samples: int
     ) -> slice:
         """Set modelling window start and stop to smallest/largest
         *existing* time indices
         """
+        # Check that number of samples is ok
+        if n_samples < MIN_SAMPLES:
+            return slice(None)
+
         # Check number of data points and widen the window if necessary
-        while len(self.modeldata.dropna().loc[start:stop]) < min_samples:
+        while len(self.modeldata.dropna().loc[start:stop]) < n_samples:
             start -= TIME_WINDOW_INCREASE
             stop += TIME_WINDOW_INCREASE
         # Create a slice from first and last index
-        return slice(*self.modeldata.loc[start:stop].index[[0, -1]])
+        window = slice(*self.modeldata.loc[start:stop].index[[0, -1]])
+
+        # If window is too wide, recurse with half the number of samples
+        if not self._window_width_ok(window):
+            window = self._get_window(start, stop, n_samples=0.5 * n_samples)
+
+        return window
 
     def _window_width_ok(self, window) -> bool:
         return self.max_window_width is None or (
@@ -196,9 +210,7 @@ class LocalRegression(object):
         return self
 
     def _fit_and_test(self, date) -> _LocalModel | None:
-        window = self._get_window(date, date + pd.Timedelta("24h"), self.min_samples)
-        if not self._window_width_ok(window):
-            return None
+        window = self._get_window(date, date + pd.Timedelta("24h"), self.n_samples)
 
         while True:
             # Get data for this model
