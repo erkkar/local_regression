@@ -89,7 +89,7 @@ class LocalRegression(object):
         """
 
         # Set of observations
-        self.modeldata = data.copy()
+        self.modeldata = data[exog + [endog]].copy()
         self.modeldata["weight"] = (
             self.modeldata[sample_weight] if sample_weight is not None else 1
         )
